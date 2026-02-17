@@ -1,0 +1,8 @@
+# CMS API - Route all requests to index.php with path
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /complaint_system/cms_api/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php?path=$1 [L,QSA]
+</IfModule>
