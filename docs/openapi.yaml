@@ -1,0 +1,1056 @@
+openapi: 3.0.3
+info:
+  title: Complaint Management API
+  description: |
+    RESTful API for the Complaint Management System. Supports full CRUD operations
+    for complaints, users, categories, and departments. All requests and responses
+    use JSON. CORS is enabled for cross-origin access.
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost/complaint_system/cms_api
+    description: Local development server
+
+tags:
+  - name: Complaints
+    description: Complaint submission and management
+  - name: Users
+    description: User accounts and roles
+  - name: Categories
+    description: Complaint categories
+  - name: Departments
+    description: Departments for routing complaints
+
+paths:
+  /complaints:
+    get:
+      tags:
+        - Complaints
+      summary: List complaints
+      description: Returns a list of complaints, optionally filtered by query parameters.
+      operationId: listComplaints
+      parameters:
+        - name: student_username
+          in: query
+          description: Filter by student username
+          required: false
+          schema:
+            type: string
+            example: "jdoe"
+        - name: department_id
+          in: query
+          description: Filter by department ID
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: status
+          in: query
+          description: Filter by complaint status
+          required: false
+          schema:
+            type: string
+            enum: [pending, in_progress, resolved, denied, awaiting_student_response]
+            example: "pending"
+        - name: category_id
+          in: query
+          description: Filter by category ID
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - complaint_id: 1
+                    title: "Network issue in lab"
+                    student_username: "jdoe"
+                    complaint: "WiFi drops frequently in building A."
+                    category_id: 2
+                    department_id: 1
+                    routed_at: null
+                    status: "pending"
+                    response: null
+                    created_at: "2025-02-18T10:00:00"
+                    updated_at: "2025-02-18T10:00:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Complaints
+      summary: Create complaint
+      description: Create a new complaint. Student username must exist in users; department_id must exist.
+      operationId: createComplaint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplaintCreate'
+            example:
+              title: "Network issue in lab"
+              student_username: "jdoe"
+              complaint: "WiFi drops frequently in building A. Please look into it."
+              category_id: 2
+              department_id: 1
+              is_anonymous: 0
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Complaint created"
+                data:
+                  complaint_id: 1
+                  title: "Network issue in lab"
+                  student_username: "jdoe"
+                  complaint: "WiFi drops frequently in building A."
+                  category_id: 2
+                  department_id: 1
+                  routed_at: null
+                  status: "pending"
+                  response: null
+                  created_at: "2025-02-18T10:00:00"
+                  updated_at: "2025-02-18T10:00:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /complaints/{id}:
+    get:
+      tags:
+        - Complaints
+      summary: Get complaint by ID
+      description: Returns a single complaint by its ID.
+      operationId: getComplaint
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  complaint_id: 1
+                  title: "Network issue in lab"
+                  student_username: "jdoe"
+                  complaint: "WiFi drops frequently in building A."
+                  category_id: 2
+                  department_id: 1
+                  routed_at: null
+                  status: "pending"
+                  response: null
+                  created_at: "2025-02-18T10:00:00"
+                  updated_at: "2025-02-18T10:00:00"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Complaints
+      summary: Update complaint
+      description: Update an existing complaint. Only provided fields are updated.
+      operationId: updateComplaint
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplaintUpdate'
+            example:
+              title: "Network issue in lab - urgent"
+              status: "in_progress"
+              response: "We have escalated to IT. Ticket #12345."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Complaint updated"
+                data:
+                  complaint_id: 1
+                  title: "Network issue in lab - urgent"
+                  student_username: "jdoe"
+                  complaint: "WiFi drops frequently in building A."
+                  category_id: 2
+                  department_id: 1
+                  routed_at: null
+                  status: "in_progress"
+                  response: "We have escalated to IT. Ticket #12345."
+                  created_at: "2025-02-18T10:00:00"
+                  updated_at: "2025-02-18T11:30:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Complaints
+      summary: Delete complaint
+      description: Permanently delete a complaint by ID.
+      operationId: deleteComplaint
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Complaint deleted"
+                data: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: Returns all users. Passwords are never returned.
+      operationId: listUsers
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - user_id: 1
+                    username: "jdoe"
+                    role: "student"
+                    approved: 1
+                    department_id: null
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Users
+      summary: Create user
+      description: Create a new user. Password is hashed server-side. Role must be one of the allowed values.
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            example:
+              username: "jdoe"
+              password: "SecurePass123!"
+              role: "student"
+              approved: 0
+              department_id: null
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "User created"
+                data:
+                  user_id: 1
+                  username: "jdoe"
+                  role: "student"
+                  approved: 0
+                  department_id: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Returns a single user by ID. Password is never returned.
+      operationId: getUser
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  user_id: 1
+                  username: "jdoe"
+                  role: "student"
+                  approved: 1
+                  department_id: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update user role, approval status, department, or password. Only provided fields are updated.
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+            example:
+              role: "student"
+              approved: 1
+              department_id: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "User updated"
+                data:
+                  user_id: 1
+                  username: "jdoe"
+                  role: "student"
+                  approved: 1
+                  department_id: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Permanently delete a user by ID. May fail if user has related records (e.g. complaints).
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "User deleted"
+                data: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: List categories
+      description: Returns all complaint categories.
+      operationId: listCategories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - category_id: 1
+                    category_name: "Academic"
+                    description: "Academic-related complaints"
+                    created_at: "2025-02-18T09:00:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      description: Create a new complaint category.
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+            example:
+              category_name: "Academic"
+              description: "Academic-related complaints"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Category created"
+                data:
+                  category_id: 1
+                  category_name: "Academic"
+                  description: "Academic-related complaints"
+                  created_at: "2025-02-18T09:00:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by ID
+      description: Returns a single category by ID.
+      operationId: getCategory
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  category_id: 1
+                  category_name: "Academic"
+                  description: "Academic-related complaints"
+                  created_at: "2025-02-18T09:00:00"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Categories
+      summary: Update category
+      description: Update an existing category.
+      operationId: updateCategory
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdate'
+            example:
+              category_name: "Academic Affairs"
+              description: "Academic and curriculum complaints"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Category updated"
+                data:
+                  category_id: 1
+                  category_name: "Academic Affairs"
+                  description: "Academic and curriculum complaints"
+                  created_at: "2025-02-18T09:00:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Categories
+      summary: Delete category
+      description: Permanently delete a category by ID. May fail if category is referenced by complaints.
+      operationId: deleteCategory
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Category deleted"
+                data: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /departments:
+    get:
+      tags:
+        - Departments
+      summary: List departments
+      description: Returns all departments.
+      operationId: listDepartments
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  - department_id: 1
+                    department_name: "IT Support"
+                    description: "Information Technology"
+                    created_at: "2025-02-18T09:00:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Departments
+      summary: Create department
+      description: Create a new department.
+      operationId: createDepartment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreate'
+            example:
+              department_name: "IT Support"
+              description: "Information Technology"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Department created"
+                data:
+                  department_id: 1
+                  department_name: "IT Support"
+                  description: "Information Technology"
+                  created_at: "2025-02-18T09:00:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /departments/{id}:
+    get:
+      tags:
+        - Departments
+      summary: Get department by ID
+      description: Returns a single department by ID.
+      operationId: getDepartment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "OK"
+                data:
+                  department_id: 1
+                  department_name: "IT Support"
+                  description: "Information Technology"
+                  created_at: "2025-02-18T09:00:00"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Departments
+      summary: Update department
+      description: Update an existing department.
+      operationId: updateDepartment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentUpdate'
+            example:
+              department_name: "IT & Infrastructure"
+              description: "Information Technology and Infrastructure"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Department updated"
+                data:
+                  department_id: 1
+                  department_name: "IT & Infrastructure"
+                  description: "Information Technology and Infrastructure"
+                  created_at: "2025-02-18T09:00:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Departments
+      summary: Delete department
+      description: Permanently delete a department by ID. May fail if department is referenced by users or complaints.
+      operationId: deleteDepartment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardApiResponse'
+              example:
+                success: true
+                message: "Department deleted"
+                data: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Resource ID (integer)
+      schema:
+        type: integer
+        minimum: 1
+        example: 1
+
+  responses:
+    BadRequest:
+      description: Bad Request - validation error or invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            success: false
+            message: "title is required"
+            errors: null
+    NotFound:
+      description: Not Found - resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            success: false
+            message: "Complaint not found"
+            errors: null
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            success: false
+            message: "Internal server error"
+            errors: null
+
+  schemas:
+    StandardApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "OK"
+        data:
+          description: Response payload (object or array or null)
+          nullable: true
+
+    ApiErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+        errors:
+          nullable: true
+          description: Optional validation or detail errors
+
+    Complaint:
+      type: object
+      properties:
+        complaint_id:
+          type: integer
+          readOnly: true
+          example: 1
+        title:
+          type: string
+          example: "Network issue in lab"
+        student_username:
+          type: string
+          example: "jdoe"
+        complaint:
+          type: string
+          description: The complaint body/text
+        category_id:
+          type: integer
+          nullable: true
+          example: 2
+        department_id:
+          type: integer
+          example: 1
+        routed_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [pending, in_progress, resolved, denied, awaiting_student_response]
+          example: "pending"
+        response:
+          type: string
+          nullable: true
+          description: Staff response to the complaint
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_anonymous:
+          type: integer
+          minimum: 0
+          maximum: 1
+          description: Optional; 1 if anonymous, 0 otherwise
+
+    ComplaintCreate:
+      type: object
+      required:
+        - title
+        - student_username
+        - complaint
+        - department_id
+      properties:
+        title:
+          type: string
+          minLength: 1
+          example: "Network issue in lab"
+        student_username:
+          type: string
+          minLength: 1
+          example: "jdoe"
+        complaint:
+          type: string
+          minLength: 1
+          example: "WiFi drops frequently in building A."
+        category_id:
+          type: integer
+          nullable: true
+          example: 2
+        department_id:
+          type: integer
+          minimum: 1
+          example: 1
+        is_anonymous:
+          type: integer
+          minimum: 0
+          maximum: 1
+          default: 0
+          example: 0
+
+    ComplaintUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        complaint:
+          type: string
+        category_id:
+          type: integer
+          nullable: true
+        department_id:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [pending, in_progress, resolved, denied, awaiting_student_response]
+        response:
+          type: string
+        is_anonymous:
+          type: integer
+          minimum: 0
+          maximum: 1
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          readOnly: true
+          example: 1
+        username:
+          type: string
+          example: "jdoe"
+        role:
+          type: string
+          enum: [student, teacher, admin, department_officer]
+          example: "student"
+        approved:
+          type: integer
+          minimum: 0
+          maximum: 1
+          example: 1
+        department_id:
+          type: integer
+          nullable: true
+          example: null
+
+    UserCreate:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          example: "jdoe"
+        password:
+          type: string
+          format: password
+          minLength: 1
+          example: "SecurePass123!"
+        role:
+          type: string
+          enum: [student, teacher, admin, department_officer]
+          default: "student"
+          example: "student"
+        approved:
+          type: integer
+          minimum: 0
+          maximum: 1
+          default: 0
+          example: 0
+        department_id:
+          type: integer
+          nullable: true
+          example: null
+
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [student, teacher, admin, department_officer]
+        approved:
+          type: integer
+          minimum: 0
+          maximum: 1
+        department_id:
+          type: integer
+          nullable: true
+        password:
+          type: string
+          format: password
+          description: New password (hashed server-side)
+
+    Category:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          readOnly: true
+          example: 1
+        category_name:
+          type: string
+          example: "Academic"
+        description:
+          type: string
+          example: "Academic-related complaints"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    CategoryCreate:
+      type: object
+      required:
+        - category_name
+      properties:
+        category_name:
+          type: string
+          minLength: 1
+          example: "Academic"
+        description:
+          type: string
+          example: "Academic-related complaints"
+
+    CategoryUpdate:
+      type: object
+      required:
+        - category_name
+      properties:
+        category_name:
+          type: string
+          minLength: 1
+          example: "Academic Affairs"
+        description:
+          type: string
+          example: "Academic and curriculum complaints"
+
+    Department:
+      type: object
+      properties:
+        department_id:
+          type: integer
+          readOnly: true
+          example: 1
+        department_name:
+          type: string
+          example: "IT Support"
+        description:
+          type: string
+          example: "Information Technology"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    DepartmentCreate:
+      type: object
+      required:
+        - department_name
+      properties:
+        department_name:
+          type: string
+          minLength: 1
+          example: "IT Support"
+        description:
+          type: string
+          example: "Information Technology"
+
+    DepartmentUpdate:
+      type: object
+      required:
+        - department_name
+      properties:
+        department_name:
+          type: string
+          minLength: 1
+          example: "IT & Infrastructure"
+        description:
+          type: string
+          example: "Information Technology and Infrastructure"
