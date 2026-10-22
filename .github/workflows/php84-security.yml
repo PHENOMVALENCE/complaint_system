@@ -1,0 +1,25 @@
+name: PHP 8.4 Security Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  php84:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - name: Show PHP runtime
+        run: php -v
+      - name: Lint PHP source
+        shell: bash
+        run: find . -type f -name '*.php' -not -path './vendor/*' -not -path './PHPMailer/*' -print0 | xargs -0 -r -n1 -P4 php -l
